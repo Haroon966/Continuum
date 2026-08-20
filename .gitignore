@@ -1,0 +1,34 @@
+# Dependencies & build
+node_modules/
+dist/
+dist-electron/
+release/
+out/
+*.tsbuildinfo
+
+# Logs & OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Editor / local agent kit (not part of product)
+.cursor/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# Electron / local Continuum runtime
+*.local
+coverage/
+.turbo/
+
+# Test / temp
+tmp/
+temp/
+.continuum-test/
