@@ -48,16 +48,18 @@ What the installer does:
 - Clones or updates Continuum into `~/continuum` (`%USERPROFILE%\continuum` on Windows)
 - Runs `npm install`
 - Adds a `continuum` launcher (`~/.local/bin/continuum` or `continuum.cmd`; Windows also adds that folder to your **user PATH**)
+- On Linux: installs Apps-menu `.desktop` + icons that run the launcher (Vite + Electron — not raw Electron)
 - Prints start instructions, then asks **Start Continuum now? [y/N]** (skipped when piped / non-interactive)
 
 Safe to re-run: updates app code only. Does **not** touch Electron user data (settings, API token, transcripts) or any project `CONTINUUM.md`.
 
-Then:
+Then start with either:
 
 ```bash
 continuum
-# or: cd ~/continuum && npm run electron:dev
 ```
+
+or open **Continuum** from your app menu / dock. Manual fallback: `cd ~/continuum && npm run electron:dev`.
 
 1. **Open folder** — Continuum creates `CONTINUUM.md` at the project root  
 2. Use **Board** / **Canvas** / **Brain**  

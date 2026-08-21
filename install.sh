@@ -111,6 +111,46 @@ EOF
   esac
 }
 
+# Linux app menu / dock: Exec must be the continuum launcher (starts Vite).
+# Raw electron → blank window (no UI on :5173).
+install_linux_desktop() {
+  case "$(uname -s)" in
+    Linux) ;;
+    *) return 0 ;;
+  esac
+
+  local apps_dir="$HOME/.local/share/applications"
+  local hicolor="$HOME/.local/share/icons/hicolor"
+  local icon_src="$INSTALL_DIR/public/icon.png"
+  local desktop="$apps_dir/continuum.desktop"
+
+  mkdir -p "$apps_dir"
+  cat >"$desktop" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Continuum
+Comment=One project. Any agent. No lost context.
+Exec=$LAUNCHER
+Icon=continuum
+Terminal=false
+Categories=Development;IDE;
+StartupWMClass=Continuum
+StartupNotify=true
+EOF
+  info "Desktop entry: $desktop"
+
+  if [[ -f "$icon_src" ]]; then
+    local size
+    for size in 32 48 64 128 256 512; do
+      mkdir -p "$hicolor/${size}x${size}/apps"
+      cp -f "$icon_src" "$hicolor/${size}x${size}/apps/continuum.png"
+    done
+    gtk-update-icon-cache -f -t "$hicolor" >/dev/null 2>&1 || true
+  fi
+  update-desktop-database "$apps_dir" >/dev/null 2>&1 || true
+}
+
 print_start_help() {
   cat <<EOF
 
@@ -118,6 +158,7 @@ Continuum is ready.
 
 Start anytime:
   continuum
+  # Linux: also Apps menu → Continuum
   # or:
   cd $INSTALL_DIR && npm run electron:dev
 
@@ -153,6 +194,7 @@ main() {
   clone_or_update
   install_deps
   install_launcher
+  install_linux_desktop
   print_start_help
   maybe_start
 }

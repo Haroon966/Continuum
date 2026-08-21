@@ -31,10 +31,14 @@ export function ensureLinuxDesktopIntegration(iconPath: string): void {
     fs.writeFileSync(path.join(dir, "continuum.png"), resized.toPNG());
   }
 
-  const appPath = app.isPackaged ? process.execPath : path.resolve(process.cwd());
+  // Dev must start Vite (port 5173). Raw electron → blank window.
+  // Prefer ~/.local/bin/continuum from install.sh; else npm in cwd.
+  const launcher = path.join(home, ".local", "bin", "continuum");
   const exec = app.isPackaged
     ? quoteDesktopArg(process.execPath)
-    : `${quoteDesktopArg(process.execPath)} ${quoteDesktopArg(appPath)}`;
+    : fs.existsSync(launcher)
+      ? quoteDesktopArg(launcher)
+      : `env ELECTRON_DISABLE_GPU=1 npm --prefix ${quoteDesktopArg(path.resolve(process.cwd()))} run electron:dev`;
 
   const desktop = `[Desktop Entry]
 Version=1.0
