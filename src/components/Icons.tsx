@@ -3,6 +3,11 @@ type IconProps = {
   className?: string;
 };
 
+type CursorIconProps = IconProps & {
+  /** dark = black cube; light = white-bg mark for primary/CTA buttons */
+  variant?: "dark" | "light";
+};
+
 function svgProps({ size = 18, className }: IconProps) {
   return {
     width: size,
@@ -85,11 +90,20 @@ export function IconFolder(p: IconProps) {
   );
 }
 
-export function IconCursor(p: IconProps) {
+export function IconCursor({
+  size = 22,
+  className,
+  variant = "dark",
+}: CursorIconProps) {
   return (
-    <svg {...svgProps(p)}>
-      <path d="m4 4 7 16 2-6 6-2L4 4Z" />
-    </svg>
+    <img
+      className={`icon-cursor icon-cursor-${variant}${className ? ` ${className}` : ""}`}
+      src={variant === "light" ? "/cursor-white.jpg" : "/cursor.jpeg"}
+      alt=""
+      width={size}
+      height={size}
+      aria-hidden
+    />
   );
 }
 
@@ -98,6 +112,76 @@ export function IconFile(p: IconProps) {
     <svg {...svgProps(p)}>
       <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9l-5-6Z" />
       <path d="M14 3v6h6" />
+    </svg>
+  );
+}
+
+export function IconLink(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path d="M10 13a5 5 0 0 0 7.54.54l1.92-1.92a5 5 0 0 0-7.07-7.07L11 6" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54L4.54 12.4a5 5 0 0 0 7.07 7.07L13 18" />
+    </svg>
+  );
+}
+
+export function IconExternalLink(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path d="M14 4h6v6" />
+      <path d="M10 14 20 4" />
+      <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    </svg>
+  );
+}
+
+export function IconChat(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 3v-3H6a2 2 0 0 1-2-2V6Z" />
+      <path d="M8 9h8M8 12h5" />
+    </svg>
+  );
+}
+
+export function IconImage(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="10" r="1.75" />
+      <path d="m21 15-4.5-4.5L8 19" />
+    </svg>
+  );
+}
+
+export function IconCode(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path d="m8 8-4 4 4 4" />
+      <path d="m16 8 4 4-4 4" />
+      <path d="m14 5-4 14" />
+    </svg>
+  );
+}
+
+/** Sprout / seed — for “seeded” edge labels */
+export function IconSeed(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <path d="M12 22v-8" />
+      <path d="M12 14c-3.5 0-6-2.2-6-5.5C6 5 9 3 12 2c3 1 6 3 6 6.5 0 3.3-2.5 5.5-6 5.5Z" />
+      <path d="M12 14c1.2-2 2-4.2 2-6.5" />
+    </svg>
+  );
+}
+
+export function IconBranch(p: IconProps) {
+  return (
+    <svg {...svgProps(p)}>
+      <circle cx="6" cy="6" r="2" />
+      <circle cx="18" cy="6" r="2" />
+      <circle cx="6" cy="18" r="2" />
+      <path d="M6 8v8M8 6h6a4 4 0 0 1 4 4v0" />
     </svg>
   );
 }

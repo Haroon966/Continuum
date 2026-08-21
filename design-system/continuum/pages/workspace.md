@@ -2,20 +2,19 @@
 
 ## Board mode (Hermes Agent kanban)
 - Columns: `triage → todo → ready → running → blocked → done`
-- Per-column `+` create
-- Drag-and-drop between columns
-- Click card → right **drawer** (title, status, priority, assignee, notes, status actions)
-- Filter toolbar
-- Link task ↔ canvas node
+- Per-column `+` create; drag-and-drop
+- Drawer: title, status, priority, notes · **Start agent** / **Mark done** (no assignee)
+- Links task ↔ canvas chat via agent loop
 
 ## Canvas mode (Bonscape)
-- Full-bleed whiteboard
-- Each node is a **chat box** with type bar + title + summary
-- Draw edges to branch ideas
-- Selected chat opens **dock** with Claude CLI (spatial chat, not a separate Agents tab)
+- Right-click empty → Add Chat/Image/Link + tools; right-click node → Branch/Duplicate/Delete
+- Animated wires with icon labels (`seeded` / `code` / `agent` / `link`)
+- Smart routing: floating side attach + smooth-step A* around node boxes (simple connect preview)
+- Keys: V/H, Space pan, scroll pan, Shift marquee, ⌘D, Del, Fit
+- Images in `.continuum/assets/`; agents: `POST /api/canvas/nodes` · `/assets` · `/tasks/:id/start|complete`
 
 ## Brain
-- Supporting source-of-truth editor for CONTINUUM.md
+- CONTINUUM.md DSL: goal, requirements, architecture, decisions, handoff, canvas map
 
 ## References
 - https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban

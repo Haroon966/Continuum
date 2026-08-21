@@ -14,7 +14,15 @@ import { projectStore } from "./project";
 import { loadSettings, saveSettings } from "./settings";
 import { spawnProjectTerminal, type TerminalSession } from "./terminal";
 import { appendTranscript, readTranscript } from "./transcripts";
+import { readAssetDataUrl, saveAssetFromPath } from "./assets";
 import type { ContinuumBrain, ContinuumSettings } from "../shared/types";
+
+// Linux/dev: avoid FATAL "GPU process isn't usable" killing the app + Vite esbuild
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch("disable-gpu");
+app.commandLine.appendSwitch("disable-gpu-compositing");
+app.commandLine.appendSwitch("disable-software-rasterizer");
+app.commandLine.appendSwitch("no-sandbox");
 
 let mainWindow: BrowserWindow | null = null;
 let apiServer: Server | null = null;
@@ -23,6 +31,13 @@ const terminals = new Map<string, TerminalSession>();
 
 const isDev = !app.isPackaged;
 
+function resolveAppIcon() {
+  if (isDev) {
+    return path.join(process.cwd(), "public", "continuum-color.png");
+  }
+  return path.join(__dirname, "../dist/continuum-color.png");
+}
+
 async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -30,7 +45,9 @@ async function createWindow() {
     minWidth: 1000,
     minHeight: 700,
     title: "Continuum",
-    backgroundColor: "#f0fdfa",
+    icon: resolveAppIcon(),
+    backgroundColor: "#00000000",
+    transparent: true,
     frame: false,
     titleBarStyle: "hidden",
     trafficLightPosition: { x: 14, y: 14 },
@@ -149,7 +166,7 @@ function registerIpc() {
       push("decision", d.id, `${d.title} ${d.reason || ""}`);
     }
     for (const n of brain.canvas.nodes) {
-      push("canvas", n.id, `${n.title} ${n.summary || ""}`);
+      push("canvas", n.id, `${n.title} ${n.summary || ""} ${n.url || ""}`);
     }
     for (const r of brain.requirements) push("requirement", r, r);
     for (const a of brain.architecture) push("architecture", a, a);
@@ -235,6 +252,35 @@ function registerIpc() {
       term.kill();
       terminals.delete(id);
     }
+  });
+
+  ipcMain.handle("canvas:pickImage", async () => {
+    if (!projectStore.projectPath) throw new Error("No project open");
+    const result = await dialog.showOpenDialog({
+      title: "Add image to canvas",
+      properties: ["openFile"],
+      filters: [
+        { name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg"] },
+      ],
+    });
+    if (result.canceled || !result.filePaths[0]) return null;
+    const { rel } = saveAssetFromPath(
+      projectStore.projectPath,
+      result.filePaths[0],
+    );
+    return { path: rel, name: path.basename(result.filePaths[0]) };
+  });
+
+  ipcMain.handle("canvas:readAsset", (_e, rel: string) => {
+    if (!projectStore.projectPath) throw new Error("No project open");
+    return readAssetDataUrl(projectStore.projectPath, rel);
+  });
+
+  ipcMain.handle("canvas:openUrl", async (_e, url: string) => {
+    const u = String(url || "");
+    if (!/^https?:\/\//i.test(u)) throw new Error("Only http(s) URLs allowed");
+    await shell.openExternal(u);
+    return true;
   });
 }
 

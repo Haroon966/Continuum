@@ -36,6 +36,11 @@ export function AppChrome({
   }, []);
 
   useEffect(() => {
+    document.documentElement.classList.toggle("is-maximized", maximized);
+    return () => document.documentElement.classList.remove("is-maximized");
+  }, [maximized]);
+
+  useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!rootRef.current?.contains(e.target as Node)) setOpenMenu(null);
     }
@@ -125,9 +130,64 @@ export function AppChrome({
 
   return (
     <div className="chrome" ref={rootRef}>
-      <div className="titlebar">
+      <div className="titlebar" role="menubar">
         <div className="titlebar-drag" />
-        <div className="titlebar-title">Continuum</div>
+        <div className="titlebar-menus">
+          {(Object.keys(menus) as MenuId[]).map((id) => {
+            const menu = menus[id];
+            const isOpen = openMenu === id;
+            return (
+              <div className="menu-item-wrap" key={id}>
+                <button
+                  type="button"
+                  className={`menu-trigger${isOpen ? " open" : ""}`}
+                  role="menuitem"
+                  aria-haspopup="true"
+                  aria-expanded={isOpen}
+                  onClick={() => setOpenMenu(isOpen ? null : id)}
+                  onMouseEnter={() => {
+                    if (openMenu) setOpenMenu(id);
+                  }}
+                >
+                  {menu.label}
+                </button>
+                {isOpen && (
+                  <ul className="menu-dropdown" role="menu">
+                    {menu.items.map((item) => (
+                      <li key={item.label} role="none">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          className="menu-option"
+                          disabled={item.disabled}
+                          onClick={() => {
+                            setOpenMenu(null);
+                            void item.action();
+                          }}
+                        >
+                          <span>{item.label}</span>
+                          {item.shortcut ? (
+                            <span className="menu-shortcut">{item.shortcut}</span>
+                          ) : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="titlebar-title" title="Continuum">
+          <img
+            className="titlebar-logo"
+            src="/continuum-color.png"
+            alt="Continuum"
+            width={32}
+            height={32}
+          />
+          <span className="titlebar-name">Continuum</span>
+        </div>
         <div className="window-controls">
           <button
             type="button"
@@ -157,57 +217,6 @@ export function AppChrome({
             <span className="win-icon win-x" />
           </button>
         </div>
-      </div>
-
-      <div className="menubar" role="menubar">
-        {(Object.keys(menus) as MenuId[]).map((id) => {
-          const menu = menus[id];
-          const isOpen = openMenu === id;
-          return (
-            <div className="menu-item-wrap" key={id}>
-              <button
-                type="button"
-                className={`menu-trigger${isOpen ? " open" : ""}`}
-                role="menuitem"
-                aria-haspopup="true"
-                aria-expanded={isOpen}
-                onClick={() => setOpenMenu(isOpen ? null : id)}
-                onMouseEnter={() => {
-                  if (openMenu) setOpenMenu(id);
-                }}
-              >
-                {menu.label}
-              </button>
-              {isOpen && (
-                <ul className="menu-dropdown" role="menu">
-                  {menu.items.map((item) => (
-                    <li key={item.label} role="none">
-                      <button
-                        type="button"
-                        role="menuitem"
-                        className="menu-option"
-                        disabled={item.disabled}
-                        onClick={() => {
-                          setOpenMenu(null);
-                          void item.action();
-                        }}
-                      >
-                        <span>{item.label}</span>
-                        {item.shortcut ? (
-                          <span className="menu-shortcut">{item.shortcut}</span>
-                        ) : null}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-        <div className="menubar-spacer" />
-        <span className="menubar-view muted" aria-live="polite">
-          workspace
-        </span>
       </div>
     </div>
   );

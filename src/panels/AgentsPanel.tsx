@@ -81,7 +81,7 @@ export function AgentsPanel() {
           disabled={!projectPath}
           onClick={() => void openCursor()}
         >
-          <IconCursor size={16} />
+          <IconCursor size={22} variant="light" />
           Continue with Cursor
         </button>
       </div>
@@ -101,6 +101,13 @@ export function AgentsPanel() {
 export CONTINUUM_API=http://127.0.0.1:${port}
 
 curl -s $CONTINUUM_API/api/context \\
+  -H "Authorization: Bearer $CONTINUUM_TOKEN"
+
+# Agent loop
+curl -s -X POST $CONTINUUM_API/api/tasks/TASK_ID/start \\
+  -H "Authorization: Bearer $CONTINUUM_TOKEN"
+
+curl -s -X POST $CONTINUUM_API/api/tasks/TASK_ID/complete \\
   -H "Authorization: Bearer $CONTINUUM_TOKEN"
 
 curl -s -X PATCH $CONTINUUM_API/api/context \\

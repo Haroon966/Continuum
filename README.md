@@ -54,30 +54,66 @@ With Continuum running and a project open:
 export CONTINUUM_TOKEN="<token from Settings>"
 export CONTINUUM_API=http://127.0.0.1:3927
 
+# Read brain (tasks, handoff, canvas map)
 curl -s "$CONTINUUM_API/api/context" \
   -H "Authorization: Bearer $CONTINUUM_TOKEN"
 
+# Patch handoff / currentState
 curl -s -X PATCH "$CONTINUUM_API/api/context" \
   -H "Authorization: Bearer $CONTINUUM_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"handoff":"Next: …"}'
 ```
 
-Full agent guide is embedded at the top of every `CONTINUUM.md`.
+### Agent loop (board → canvas chat → done)
+
+```bash
+# Create a ready task
+curl -s -X POST "$CONTINUUM_API/api/tasks" \
+  -H "Authorization: Bearer $CONTINUUM_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Fix login","status":"ready","priority":"high"}'
+
+# Start work: status=running + linked chat node (use nodeId in Continuum Canvas)
+curl -s -X POST "$CONTINUUM_API/api/tasks/t1/start" \
+  -H "Authorization: Bearer $CONTINUUM_TOKEN"
+
+# Finish work
+curl -s -X POST "$CONTINUUM_API/api/tasks/t1/complete" \
+  -H "Authorization: Bearer $CONTINUUM_TOKEN"
+```
+
+In the UI: open a task drawer → **Start agent** (creates chat + jumps to Canvas) → **Mark done**.
+
+Full agent guide is also embedded at the top of every `CONTINUUM.md`.
+
+## Ship checklist
+
+Before calling a release “good enough”:
+
+- [ ] `npm test` passes
+- [ ] Open folder → `CONTINUUM.md` created / loaded
+- [ ] Board: create card, drag across columns, drawer edits persist
+- [ ] Board: **Start agent** → Canvas chat + Running; **Mark done** → Done
+- [ ] Canvas: right-click add Chat/Image/Link; connect wires; drag nodes; reload still there
+- [ ] Settings: API token + `curl` context works on `127.0.0.1`
+- [ ] Continue with Cursor opens project folder
 
 ## Project layout
 
 ```text
-electron/     # Main process, file watch, localhost API, terminal
-src/          # React UI (Board / Canvas / Brain)
-shared/       # CONTINUUM.md DSL parse/serialize + types
-prd.md        # Product requirements
-design-system/  # UI design notes
+electron/                 # Main process, file watch, localhost API, terminal
+src/                      # React UI (Board / Canvas / Brain / Agents)
+shared/                   # CONTINUUM.md DSL parse/serialize + types
+public/                   # Static brand assets (favicon, logos) served by Vite
+design-system/continuum/  # UI design notes + unused brand variants
+docs/                     # Product requirements (prd.md)
+CONTINUUM.md              # Project brain (repo root — required)
 ```
 
 ## Docs
 
-- Product: [`prd.md`](./prd.md)
+- Product: [`docs/prd.md`](./docs/prd.md)
 - Design: [`design-system/continuum/`](./design-system/continuum/)
 
 ## Security notes

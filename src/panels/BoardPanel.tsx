@@ -6,6 +6,46 @@ import {
   type Task,
   type TaskStatus,
 } from "@shared/types";
+import { completeTaskWork, startTaskWork } from "@shared/agentLoop";
+
+function TicketIcon() {
+  return (
+    <svg
+      className="hermes-ticket-icon"
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M15 5H5a2 2 0 0 0-2 2v4a2 2 0 0 1 0 4v4a2 2 0 0 0 2 2h10" />
+      <path d="M19 5h-2v14h2a2 2 0 0 0 2-2v-4a2 2 0 0 1 0-4V7a2 2 0 0 0-2-2Z" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      className="hermes-check-icon"
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
 
 /**
  * Hermes-inspired kanban: columns triage→done, + per column,
@@ -19,7 +59,6 @@ export function BoardPanel() {
   const setSelectedNodeId = useAppStore((s) => s.setSelectedNodeId);
   const setActiveTerminalId = useAppStore((s) => s.setActiveTerminalId);
   const setFocusSection = useAppStore((s) => s.setFocusSection);
-  const [filter, setFilter] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
 
   if (!brain) return null;
@@ -27,16 +66,7 @@ export function BoardPanel() {
   const selected = brain.tasks.find((t) => t.id === selectedTaskId) || null;
 
   const visible = (status: TaskStatus) =>
-    brain.tasks.filter((t) => {
-      if (t.status !== status) return false;
-      if (!filter.trim()) return true;
-      const q = filter.toLowerCase();
-      return (
-        t.title.toLowerCase().includes(q) ||
-        t.id.toLowerCase().includes(q) ||
-        (t.assignee || "").toLowerCase().includes(q)
-      );
-    });
+    brain.tasks.filter((t) => t.status === status);
 
   async function moveTask(id: string, status: TaskStatus) {
     const tasks = brain!.tasks.map((t) =>
@@ -53,7 +83,6 @@ export function BoardPanel() {
       title: title.trim(),
       status,
       priority: "medium",
-      assignee: "human",
     };
     await applyBrain({ ...brain!, tasks: [...brain!.tasks, task] });
     setSelectedTaskId(task.id);
@@ -75,84 +104,92 @@ export function BoardPanel() {
     setFocusSection("canvas");
   }
 
+  async function startAgentOnSelected() {
+    if (!selected || !brain) return;
+    const { brain: next, nodeId } = startTaskWork(brain, selected.id);
+    await applyBrain(next);
+    setSelectedNodeId(nodeId);
+    setActiveTerminalId(nodeId);
+    setFocusSection("canvas");
+  }
+
+  async function completeSelected() {
+    if (!selected || !brain) return;
+    const { brain: next } = completeTaskWork(brain, selected.id);
+    await applyBrain(next);
+  }
+
   return (
     <div className="hermes-board">
-      <div className="hermes-toolbar">
-        <div>
-          <h2>Kanban</h2>
-          <p className="sub">
-            Hermes-style board — drag cards, open drawer, agents share CONTINUUM.md.
-          </p>
-        </div>
-        <input
-          className="grow-input"
-          aria-label="Filter tasks"
-          placeholder="Filter title / assignee…"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
-
       <div className="hermes-columns">
-        {DEFAULT_COLUMNS.map((col) => (
-          <section
-            className={`hermes-col hermes-col-${col}`}
-            key={col}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const id = e.dataTransfer.getData("text/task-id") || dragId;
-              if (id) void moveTask(id, col);
-              setDragId(null);
-            }}
-          >
-            <header className="hermes-col-head">
-              <div>
-                <span className="hermes-col-title">{COLUMN_LABELS[col]}</span>
-                <span className="hermes-count">{visible(col).length}</span>
-              </div>
-              <button
-                type="button"
-                className="hermes-add"
-                aria-label={`Add to ${COLUMN_LABELS[col]}`}
-                onClick={() => void createInColumn(col)}
-              >
-                +
-              </button>
-            </header>
-            <div className="hermes-col-body">
-              {visible(col).map((task) => (
-                <article
-                  key={task.id}
-                  className={`hermes-card${selectedTaskId === task.id ? " selected" : ""}`}
-                  draggable
-                  onDragStart={(e) => {
-                    setDragId(task.id);
-                    e.dataTransfer.setData("text/task-id", task.id);
-                    e.dataTransfer.effectAllowed = "move";
-                  }}
-                  onClick={() => setSelectedTaskId(task.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") setSelectedTaskId(task.id);
-                  }}
-                  role="button"
-                  tabIndex={0}
+        {DEFAULT_COLUMNS.map((col) => {
+          const count = visible(col).length;
+          return (
+            <section
+              className={`hermes-col hermes-col-${col}`}
+              key={col}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const id = e.dataTransfer.getData("text/task-id") || dragId;
+                if (id) void moveTask(id, col);
+                setDragId(null);
+              }}
+            >
+              <header className="hermes-col-head">
+                <div className="hermes-col-label">
+                  <span className="hermes-col-title">{COLUMN_LABELS[col]}</span>
+                  <span className="hermes-count">
+                    {col === "done" ? <CheckIcon /> : null}
+                    {count}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="hermes-add"
+                  aria-label={`Add to ${COLUMN_LABELS[col]}`}
+                  onClick={() => void createInColumn(col)}
                 >
-                  <div className="hermes-card-title">{task.title}</div>
-                  <div className="hermes-card-meta">
-                    <span className={`prio prio-${task.priority || "medium"}`}>
-                      {task.priority || "medium"}
-                    </span>
-                    {task.assignee ? (
-                      <span className="assignee">{task.assignee}</span>
-                    ) : null}
-                    {task.link ? <span className="link-pill">↗ canvas</span> : null}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ))}
+                  +
+                </button>
+              </header>
+              <div className="hermes-col-body">
+                {visible(col).map((task) => {
+                  const prio = task.priority || "medium";
+                  return (
+                    <article
+                      key={task.id}
+                      className={`hermes-card${selectedTaskId === task.id ? " selected" : ""}`}
+                      draggable
+                      onDragStart={(e) => {
+                        setDragId(task.id);
+                        e.dataTransfer.setData("text/task-id", task.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onClick={() => setSelectedTaskId(task.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") setSelectedTaskId(task.id);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="hermes-card-title">{task.title}</div>
+                      <span className={`hermes-tag hermes-tag-${prio}`}>
+                        {prio}
+                      </span>
+                      <div className="hermes-card-foot">
+                        <span className="hermes-ticket">
+                          <TicketIcon />
+                          {task.id}
+                        </span>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
       {selected && (
@@ -208,15 +245,6 @@ export function BoardPanel() {
             </select>
           </div>
           <div className="field">
-            <label htmlFor="ht-assignee">Assignee</label>
-            <input
-              id="ht-assignee"
-              value={selected.assignee || ""}
-              placeholder="human / claude / cursor"
-              onChange={(e) => void patchSelected({ assignee: e.target.value })}
-            />
-          </div>
-          <div className="field">
             <label htmlFor="ht-notes">Notes</label>
             <textarea
               id="ht-notes"
@@ -224,6 +252,24 @@ export function BoardPanel() {
               value={selected.notes || ""}
               onChange={(e) => void patchSelected({ notes: e.target.value })}
             />
+          </div>
+          <div className="row">
+            <button
+              type="button"
+              className="btn primary"
+              disabled={selected.status === "done"}
+              onClick={() => void startAgentOnSelected()}
+            >
+              Start agent
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={selected.status === "done"}
+              onClick={() => void completeSelected()}
+            >
+              Mark done
+            </button>
           </div>
           <div className="row">
             <button
@@ -241,7 +287,7 @@ export function BoardPanel() {
             </button>
             <button
               type="button"
-              className="btn primary"
+              className="btn ghost"
               disabled={!selected.link}
               onClick={openLinkedCanvas}
             >

@@ -85,17 +85,20 @@ ${serializeBrainFence(brain)}
 export const AGENT_GUIDE = `<!-- CONTINUUM AGENT GUIDE
 Rules for Claude CLI / Cursor (and humans):
 
-1. CONTINUUM.md is the only Continuum project file at repo root. Do not create a .continuum/ folder.
+1. CONTINUUM.md is the project brain at repo root. Canvas media may live under .continuum/assets/ only.
 2. Update the fenced continuum block when something meaningful changes (goal, tasks, decisions, handoff, canvas map).
 3. Do NOT dump full chat transcripts into this file. Keep summaries short.
 4. Prefer updating tasks/decisions/currentState/handoff after real progress.
 5. If nothing meaningful changed, do not rewrite this file.
+6. Canvas nodes: chat | note | image | link | decision | task.
+   - image/link nodes use url= (project-relative path or https URL).
+   - Agents may POST /api/canvas/nodes or /api/canvas/assets — same as the UI.
 
 ## Cursor local API (curl)
 
 Continuum desktop exposes localhost HTTP. Default port 3927.
 
-GET context (decisions, tasks, handoff, canvas summary):
+GET context (decisions, tasks, handoff, canvas):
   curl -s http://127.0.0.1:3927/api/context \\
     -H "Authorization: Bearer $CONTINUUM_TOKEN"
 
@@ -104,6 +107,18 @@ Update brain / canvas (JSON body merges into brain):
     -H "Authorization: Bearer $CONTINUUM_TOKEN" \\
     -H "Content-Type: application/json" \\
     -d '{"handoff":"Next: fix tests","currentState":"..."}'
+
+Add link or note on canvas:
+  curl -s -X POST http://127.0.0.1:3927/api/canvas/nodes \\
+    -H "Authorization: Bearer $CONTINUUM_TOKEN" \\
+    -H "Content-Type: application/json" \\
+    -d '{"type":"link","title":"Docs","url":"https://example.com","x":200,"y":120}'
+
+Upload image to canvas (base64, lands in .continuum/assets/):
+  curl -s -X POST http://127.0.0.1:3927/api/canvas/assets \\
+    -H "Authorization: Bearer $CONTINUUM_TOKEN" \\
+    -H "Content-Type: application/json" \\
+    -d '{"filename":"shot.png","dataBase64":"...","title":"Screenshot","x":240,"y":160}'
 
 Create / move task:
   curl -s -X POST http://127.0.0.1:3927/api/tasks \\
@@ -115,6 +130,15 @@ Create / move task:
     -H "Authorization: Bearer $CONTINUUM_TOKEN" \\
     -H "Content-Type: application/json" \\
     -d '{"status":"done"}'
+
+Agent loop (ready → running+chat → done):
+  curl -s -X POST http://127.0.0.1:3927/api/tasks/t1/start \\
+    -H "Authorization: Bearer $CONTINUUM_TOKEN"
+  # → creates/links chat node, status=running; open that node in Continuum UI
+
+  curl -s -X POST http://127.0.0.1:3927/api/tasks/t1/complete \\
+    -H "Authorization: Bearer $CONTINUUM_TOKEN"
+  # → status=done; handoff points at next ready task
 
 Token and port: Continuum Settings. Prefer curl GET before big Cursor work.
 -->`;
@@ -193,6 +217,7 @@ export function serializeBrain(brain: ContinuumBrain): string {
         `y=${Math.round(n.y)}`,
       ];
       lines.push(`    - [${bits.join(" ")}] ${escapeInline(n.title)}`);
+      if (n.url) lines.push(`      url: ${escapeInline(n.url)}`);
       if (n.summary) lines.push(`      summary: ${escapeInline(n.summary)}`);
     }
   }
@@ -524,12 +549,24 @@ function readCanvas(
         title: unescapeInline(m[2].trim()),
         x: Number(meta.x || 0),
         y: Number(meta.y || 0),
+        // legacy: url= in [meta] (breaks on spaces) — prefer nested url: line
+        url: meta.url ? unescapeInline(meta.url) : undefined,
       };
       i += 1;
-      const sum = lines[i]?.match(/^\s+summary:\s*(.*)$/);
-      if (sum) {
-        node.summary = unescapeInline(sum[1].trim());
-        i += 1;
+      while (i < lines.length) {
+        const sum = lines[i].match(/^\s+summary:\s*(.*)$/);
+        if (sum) {
+          node.summary = unescapeInline(sum[1].trim());
+          i += 1;
+          continue;
+        }
+        const urlLine = lines[i].match(/^\s+url:\s*(.*)$/);
+        if (urlLine) {
+          node.url = unescapeInline(urlLine[1].trim());
+          i += 1;
+          continue;
+        }
+        break;
       }
       canvas.nodes.push(node);
       continue;
@@ -561,7 +598,9 @@ function readCanvas(
   }
 
   for (const n of canvas.nodes) {
-    if (!["chat", "decision", "task", "note"].includes(n.type)) {
+    if (
+      !["chat", "decision", "task", "note", "image", "link"].includes(n.type)
+    ) {
       errors.push(`Unknown canvas node type: ${n.type}`);
       n.type = "note";
     }

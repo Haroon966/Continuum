@@ -6,7 +6,13 @@ export type TaskStatus =
   | "blocked"
   | "done";
 
-export type CanvasNodeType = "chat" | "decision" | "task" | "note";
+export type CanvasNodeType =
+  | "chat"
+  | "decision"
+  | "task"
+  | "note"
+  | "image"
+  | "link";
 
 export interface Task {
   id: string;
@@ -39,6 +45,8 @@ export interface CanvasNode {
   x: number;
   y: number;
   summary?: string;
+  /** Project-relative path (.continuum/assets/…) or http(s) URL — for image/link nodes */
+  url?: string;
 }
 
 export interface CanvasEdge {

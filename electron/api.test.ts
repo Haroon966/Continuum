@@ -67,4 +67,84 @@ describe("local curl API", () => {
     expect(file).toContain("Next: verify API");
     expect(file).toContain("API task");
   });
+
+  it("POST canvas link + asset", async () => {
+    const link = await fetch(`http://127.0.0.1:${port}/api/canvas/nodes`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "link",
+        title: "Example",
+        url: "https://example.com",
+        x: 12,
+        y: 34,
+      }),
+    });
+    expect(link.status).toBe(201);
+
+    const tinyPng =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const asset = await fetch(`http://127.0.0.1:${port}/api/canvas/assets`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        filename: "dot.png",
+        dataBase64: tinyPng,
+        title: "Dot",
+      }),
+    });
+    expect(asset.status).toBe(201);
+    const json = (await asset.json()) as { path: string };
+    expect(json.path).toContain(".continuum/assets/");
+    expect(fs.existsSync(path.join(folder, json.path))).toBe(true);
+
+    const file = fs.readFileSync(path.join(folder, "CONTINUUM.md"), "utf8");
+    expect(file).toContain("https://example.com");
+    expect(file).toContain("type=image");
+  });
+
+  it("agent loop start + complete", async () => {
+    const created = await fetch(`http://127.0.0.1:${port}/api/tasks`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ title: "Loop me", status: "ready", id: "tloop" }),
+    });
+    expect(created.status).toBe(201);
+
+    const start = await fetch(
+      `http://127.0.0.1:${port}/api/tasks/tloop/start`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    expect(start.status).toBe(200);
+    const started = (await start.json()) as {
+      task: { status: string; link: string };
+      nodeId: string;
+    };
+    expect(started.task.status).toBe("running");
+    expect(started.nodeId).toBeTruthy();
+    expect(started.task.link).toBe(started.nodeId);
+
+    const done = await fetch(
+      `http://127.0.0.1:${port}/api/tasks/tloop/complete`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    expect(done.status).toBe(200);
+    const finished = (await done.json()) as { task: { status: string } };
+    expect(finished.task.status).toBe("done");
+  });
 });

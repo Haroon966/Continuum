@@ -4,6 +4,13 @@ export function Welcome({ onOpen }: { onOpen: () => void }) {
   return (
     <div className="empty">
       <div className="welcome-card">
+        <img
+          className="welcome-logo"
+          src="/continuum-color.png"
+          alt="Continuum"
+          width={64}
+          height={64}
+        />
         <p className="eyebrow">Continuum</p>
         <h2>One project. Any agent. No lost context.</h2>
         <p className="sub">

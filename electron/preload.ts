@@ -28,6 +28,9 @@ export type ContinuumApi = {
   terminalWrite: (id: string, data: string) => Promise<void>;
   terminalResize: (id: string, cols: number, rows: number) => Promise<void>;
   terminalKill: (id: string) => Promise<void>;
+  pickCanvasImage: () => Promise<{ path: string; name: string } | null>;
+  readCanvasAsset: (rel: string) => Promise<string | null>;
+  openExternalUrl: (url: string) => Promise<boolean>;
   onProjectChanged: (cb: (payload: unknown) => void) => () => void;
   onExternalChange: (cb: () => void) => () => void;
   onTerminalData: (
@@ -56,6 +59,9 @@ const api: ContinuumApi = {
   terminalResize: (id, cols, rows) =>
     ipcRenderer.invoke("terminal:resize", { id, cols, rows }),
   terminalKill: (id) => ipcRenderer.invoke("terminal:kill", id),
+  pickCanvasImage: () => ipcRenderer.invoke("canvas:pickImage"),
+  readCanvasAsset: (rel) => ipcRenderer.invoke("canvas:readAsset", rel),
+  openExternalUrl: (url) => ipcRenderer.invoke("canvas:openUrl", url),
   onProjectChanged: (cb) => {
     const listener = (_: unknown, payload: unknown) => cb(payload);
     ipcRenderer.on("project:changed", listener);

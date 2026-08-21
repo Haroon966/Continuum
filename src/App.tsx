@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useAppStore } from "./store";
 import type { ContinuumDocument } from "@shared/types";
 import { AppChrome } from "./components/AppChrome";
+import { ModeTabs } from "./components/ModeTabs";
+import { StatusBarMeta } from "./components/StatusBarMeta";
 import { IconCursor, IconFile, IconFolder } from "./components/Icons";
 import { Workspace } from "./views/Workspace";
 import { Welcome } from "./views/Welcome";
@@ -71,8 +73,8 @@ export function App() {
       <div className="app-shell app-shell-unified">
         <div className="main">
           <header className="topbar">
-            <div className="path" title={projectPath || undefined}>
-              {projectPath || "No project open"}
+            <div className="topbar-left">
+              {projectPath ? <ModeTabs /> : null}
             </div>
             <div className="row">
               {settings && (
@@ -103,7 +105,7 @@ export function App() {
                 disabled={!projectPath}
                 onClick={() => void openCursor()}
               >
-                <IconCursor size={16} />
+                <IconCursor size={22} variant="light" />
                 Cursor
               </button>
             </div>
@@ -117,6 +119,13 @@ export function App() {
           </main>
         </div>
       </div>
+
+      <footer className="statusbar" aria-label="Status">
+        <div className="statusbar-path muted" title={projectPath || undefined}>
+          {projectPath || "No project open"}
+        </div>
+        <StatusBarMeta />
+      </footer>
 
       {notice && (
         <div className="notice" role="status">

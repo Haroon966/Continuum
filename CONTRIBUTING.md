@@ -21,7 +21,7 @@ npm run build
 - Prefer small, focused PRs
 - Match existing code style; no drive-by refactors
 - Do not commit secrets, `.env`, or `~/.config/continuum` data
-- Update `prd.md` only when product behavior changes intentionally
+- Update `docs/prd.md` only when product behavior changes intentionally
 - Keep UI light-theme (see `design-system/continuum/`)
 
 ## Commit messages
