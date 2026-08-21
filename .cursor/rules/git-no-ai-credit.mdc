@@ -1,0 +1,14 @@
+---
+description: Never attribute commits/PRs to Cursor or any AI
+alwaysApply: true
+---
+
+# No AI / Cursor git credit
+
+When committing, amending, rebasing, pushing, or opening PRs in this repo:
+
+- Do **not** add `Co-authored-by:` for Cursor, Copilot, Claude, agents, or any AI.
+- Do **not** put Cursor/agent names, emails (`cursoragent@cursor.com`), links, or trailers in commit messages, PR titles, PR bodies, or git notes.
+- Author and committer = the human user's normal git identity only.
+- If a tool injects AI co-author text, strip it before push (amend / rewrite). Never force-push `main`/`master` unless the user explicitly asks.
+- Prefer the repo hook at `.githooks/commit-msg` (enabled via `npm install` / `core.hooksPath`).

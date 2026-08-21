@@ -33,9 +33,11 @@
     "build": "vite build",
     "electron:dev": "ELECTRON_DISABLE_GPU=1 vite",
     "start": "ELECTRON_DISABLE_GPU=1 vite",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:git-hooks": "bash .githooks/test-commit-msg.sh"
   },
   "dependencies": {
     "@tisoap/react-flow-smart-edge": "^5.0.0",

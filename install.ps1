@@ -105,6 +105,8 @@ function Install-Deps {
   try {
     & npm install
     if ($LASTEXITCODE -ne 0) { Die "npm install failed." }
+    # Enforce no Cursor/AI Co-authored-by on commits in this clone.
+    & git config core.hooksPath .githooks
   } finally {
     Pop-Location
   }

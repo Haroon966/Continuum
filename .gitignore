@@ -18,7 +18,9 @@ Thumbs.db
 !.env.example
 
 # Editor / local agent kit (not part of product)
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/git-no-ai-credit.mdc
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json.example

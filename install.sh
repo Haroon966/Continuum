@@ -86,6 +86,8 @@ clone_or_update() {
 install_deps() {
   info "Installing npm dependencies"
   (cd "$INSTALL_DIR" && npm install)
+  # Enforce no Cursor/AI Co-authored-by on commits in this clone.
+  (cd "$INSTALL_DIR" && git config core.hooksPath .githooks) || true
 }
 
 install_launcher() {

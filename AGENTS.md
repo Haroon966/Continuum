@@ -62,6 +62,7 @@ When committing, amending, rebasing, or pushing:
 - Author and committer must stay the user's normal git identity only.
 - If a hook or tool injects AI co-author text, strip it (rewrite commit / amend) before push. Prefer feature-branch `--force-with-lease` only when needed to remove it — never force-push `main`/`master` unless the user explicitly asks.
 - Default: plain commits under the user's name, no AI attribution of any kind.
+- Enforcement: `.githooks/commit-msg` (via `npm prepare` → `core.hooksPath=.githooks`) strips Cursor/`cursoragent@cursor.com` and other AI trailers. Rule file: `.cursor/rules/git-no-ai-credit.mdc`.
 
 ## Architecture
 
