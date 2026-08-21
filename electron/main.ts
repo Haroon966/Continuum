@@ -3,9 +3,12 @@ import {
   BrowserWindow,
   dialog,
   ipcMain,
+  nativeImage,
   nativeTheme,
   shell,
+  type NativeImage,
 } from "electron";
+import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import type { Server } from "node:http";
@@ -15,6 +18,7 @@ import { loadSettings, saveSettings } from "./settings";
 import { spawnProjectTerminal, type TerminalSession } from "./terminal";
 import { appendTranscript, readTranscript } from "./transcripts";
 import { readAssetDataUrl, saveAssetFromPath } from "./assets";
+import { ensureLinuxDesktopIntegration } from "./linux-desktop";
 import type { ContinuumBrain, ContinuumSettings } from "../shared/types";
 
 // Linux/dev: avoid FATAL "GPU process isn't usable" killing the app + Vite esbuild
@@ -30,22 +34,40 @@ let settings = loadSettings();
 const terminals = new Map<string, TerminalSession>();
 
 const isDev = !app.isPackaged;
+app.setName("Continuum");
 
-function resolveAppIcon() {
-  if (isDev) {
-    return path.join(process.cwd(), "public", "continuum-color.png");
+/** Prefer RGBA icon.png — indexed PNGs often fail as window icons on Linux. */
+function resolveAppIconPath(): string | undefined {
+  const names = ["icon.png", "continuum-color.png"];
+  const dirs = isDev
+    ? [path.join(process.cwd(), "public")]
+    : [path.join(__dirname, "../dist"), path.join(__dirname, "../public")];
+
+  for (const dir of dirs) {
+    for (const name of names) {
+      const iconPath = path.join(dir, name);
+      if (fs.existsSync(iconPath)) return iconPath;
+    }
   }
-  return path.join(__dirname, "../dist/continuum-color.png");
+  return undefined;
+}
+
+function loadAppIcon(): NativeImage | undefined {
+  const iconPath = resolveAppIconPath();
+  if (!iconPath) return undefined;
+  const img = nativeImage.createFromPath(iconPath);
+  return img.isEmpty() ? undefined : img;
 }
 
 async function createWindow() {
+  const icon = loadAppIcon();
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1000,
     minHeight: 700,
     title: "Continuum",
-    icon: resolveAppIcon(),
+    ...(icon ? { icon } : {}),
     backgroundColor: "#00000000",
     transparent: true,
     frame: false,
@@ -57,6 +79,18 @@ async function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  const applyIcon = () => {
+    if (!icon || !mainWindow) return;
+    mainWindow.setIcon(icon);
+    if (process.platform === "darwin" && app.dock) {
+      app.dock.setIcon(icon);
+    }
+  };
+  applyIcon();
+  // Transparent Linux windows often drop _NET_WM_ICON until after show.
+  mainWindow.once("ready-to-show", applyIcon);
+  mainWindow.on("show", applyIcon);
 
   nativeTheme.themeSource = "light";
   if (isDev) {
@@ -296,6 +330,9 @@ projectStore.on("external-change", () => {
 });
 
 app.whenReady().then(async () => {
+  const iconPath = resolveAppIconPath();
+  if (iconPath) ensureLinuxDesktopIntegration(iconPath);
+
   registerIpc();
   await startApi();
   await createWindow();

@@ -25,7 +25,45 @@ No cloud account. No Continuum-owned provider API keys. Project folder owns the 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) on `PATH` (optional, for canvas chat)
 - [Cursor](https://cursor.com/) on `PATH` (optional, for Continue with Cursor)
 
-## Quick start
+## Quick start (one-shot)
+
+Requires **Node.js 20+** and **git** on `PATH`.
+
+### Linux / macOS
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Haroon966/Continuum/main/install.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/Haroon966/Continuum/main/install.ps1 | iex
+```
+
+If scripts are blocked, run once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+What the installer does:
+
+- Clones or updates Continuum into `~/continuum` (`%USERPROFILE%\continuum` on Windows)
+- Runs `npm install`
+- Adds a `continuum` launcher (`~/.local/bin/continuum` or `continuum.cmd`; Windows also adds that folder to your **user PATH**)
+- Prints start instructions, then asks **Start Continuum now? [y/N]** (skipped when piped / non-interactive)
+
+Safe to re-run: updates app code only. Does **not** touch Electron user data (settings, API token, transcripts) or any project `CONTINUUM.md`.
+
+Then:
+
+```bash
+continuum
+# or: cd ~/continuum && npm run electron:dev
+```
+
+1. **Open folder** — Continuum creates `CONTINUUM.md` at the project root  
+2. Use **Board** / **Canvas** / **Brain**  
+3. **Settings** — Claude/Cursor paths, API port/token  
+
+### Manual install
 
 ```bash
 git clone https://github.com/Haroon966/Continuum.git continuum
@@ -34,10 +72,6 @@ npm install
 npm run electron:dev
 ```
 
-1. **Open folder** — Continuum creates `CONTINUUM.md` at the project root  
-2. Use **Board** / **Canvas** / **Brain**  
-3. **Settings** — Claude/Cursor paths, API port/token  
-
 ### Scripts
 
 | Command | Description |
@@ -45,6 +79,8 @@ npm run electron:dev
 | `npm run electron:dev` | Dev app (Vite + Electron, GPU disabled for stability) |
 | `npm run build` | Production renderer + electron bundles |
 | `npm test` | Unit tests (DSL + local API) |
+| `bash install.sh` | One-shot install / update (Linux / macOS) |
+| `powershell -File install.ps1` | One-shot install / update (Windows) |
 
 ## Cursor curl API
 

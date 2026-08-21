@@ -139,7 +139,7 @@ html.is-maximized .app-root {
 .titlebar-logo {
   width: 42px;
   height: auto;
-  border-radius: 8px;
+  border-radius: 12px;
   object-fit: cover;
   display: block;
   flex-shrink: 0;
@@ -775,7 +775,7 @@ html.is-maximized .app-root {
 .welcome-logo {
   width: 64px;
   height: 64px;
-  border-radius: 14px;
+  border-radius: 12px;
   object-fit: cover;
   display: block;
   margin: 0 0 14px;
